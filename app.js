@@ -876,33 +876,31 @@ function renderExpensesInModal() {
 
     const assignBtn = document.createElement("button");
     assignBtn.className = "secondary-btn";
-    assignBtn.textContent = "Pick members";
-
-    const selectedSummary = document.createElement("div");
-    selectedSummary.className = "small-text";
-    selectedSummary.style.marginLeft = "8px";
 
     if (!Array.isArray(e.selectedMembers)) {
       e.selectedMembers = [];
     }
 
-    function updateSelectedSummary() {
+    function updateAssignButtonLabel() {
       const ids = e.selectedMembers || [];
       if (!ids.length) {
-        selectedSummary.textContent = "(Everyone)";
+        // Everyone case
+        assignBtn.textContent = "Everyone";
         e.assignedToId = "everyone";
+      } else if (ids.length === 1) {
+        const name = getMemberById(ids[0])?.name || "Member";
+        assignBtn.textContent = name;
+        e.assignedToId = ids[0];
       } else {
-        const names = ids.map((id) => getMemberById(id)?.name || "").filter(Boolean);
-        selectedSummary.textContent = names.join(", ");
-        if (ids.length === 1) {
-          e.assignedToId = ids[0];
-        } else {
-          e.assignedToId = "everyone"; // actual per-member split handled when we applyExpenseMemberSplit
-        }
+        const firstName = getMemberById(ids[0])?.name || "Member";
+        const extra = ids.length - 1;
+        assignBtn.textContent = `${firstName} + ${extra}`;
+        // actual per-member split handled in applyExpenseMemberSplit
+        e.assignedToId = "everyone";
       }
     }
 
-    updateSelectedSummary();
+    updateAssignButtonLabel();
 
     assignBtn.addEventListener("click", () => {
       openExpenseMemberSelect(e);
@@ -910,8 +908,6 @@ function renderExpensesInModal() {
 
     bottomLeft.appendChild(assignLabel);
     bottomLeft.appendChild(assignBtn);
-    bottomLeft.appendChild(selectedSummary);
-
     const actions = document.createElement("div");
     actions.className = "expense-actions";
 
