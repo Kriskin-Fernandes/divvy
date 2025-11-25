@@ -1,42 +1,80 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Divvy</title>
 
     <!-- Materialize CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
 
     <!-- Custom Styles -->
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css" />
 </head>
+
 <body class="grey lighten-4">
 
-    <!-- Main Container -->
-    <div class="container center-align" style="margin-top: 60px;">
-        <h3 class="blue-text text-darken-3" style="font-weight: 600;">Divvy</h3>
-
-        <div class="card" style="padding: 20px; border-radius: 16px;">
-            <h5>Welcome</h5>
-            <p>Split bills with your group instantly.</p>
-
-            <!-- Create Divvy Button -->
-            <a id="createDivvyBtn" class="waves-effect waves-light btn blue" style="width: 100%; margin-top: 10px;">
-                Make a Divvy
-            </a>
-
-            <!-- View Divvy Input -->
-            <div style="margin-top: 20px;">
-                <input id="divvyCodeInput" type="text" placeholder="Enter Divvy Code" maxlength="6" style="text-transform: uppercase;">
-                <a id="viewDivvyBtn" class="waves-effect waves-light btn green" style="width: 100%; margin-top: 10px;">
-                    View a Divvy
-                </a>
-            </div>
-        </div>
+    <!-- Divvy Header -->
+    <div class="blue darken-3 white-text center-align" style="padding: 12px 0; font-size: 20px;" id="divvyHeader">
+        Welcome to Divvy
     </div>
 
-    <!-- Firebase SDKs (only once, compat versions) -->
+    <!-- Main Container -->
+    <div class="container" id="mainContainer" style="margin-top: 20px;">
+
+        <!-- Landing Page -->
+        <div id="landingPage">
+            <div class="card" style="padding: 20px; border-radius: 16px;">
+                <h5 class="center-align">Split bills with your group instantly</h5>
+
+                <!-- Create Divvy Button -->
+                <a id="createDivvyBtn" class="waves-effect waves-light btn blue" style="width: 100%; margin-top: 10px;">
+                    Make a Divvy
+                </a>
+
+                <!-- View Divvy Input -->
+                <div style="margin-top: 20px;">
+                    <input id="divvyCodeInput" type="text" placeholder="Enter Divvy Code" maxlength="6" style="text-transform: uppercase;">
+                    <a id="viewDivvyBtn" class="waves-effect waves-light btn green" style="width: 100%; margin-top: 10px;">
+                        View a Divvy
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Divvy Page -->
+        <div id="divvyPage" style="display: none;">
+
+            <!-- People List -->
+            <div class="card" style="padding: 10px; margin-bottom: 20px;">
+                <h6>People in this Divvy</h6>
+                <div id="peopleList"></div>
+                <div style="margin-top: 10px;">
+                    <input id="addPersonInput" type="text" placeholder="Add a new person">
+                    <a id="addPersonBtn" class="waves-effect waves-light btn-small blue" style="margin-top: 5px;">Add Person</a>
+                </div>
+            </div>
+
+            <!-- Receipts Section -->
+            <div class="card" style="padding: 10px; margin-bottom: 20px;">
+                <h6>Receipts</h6>
+                <div id="receiptsList"></div>
+                <a id="createReceiptBtn" class="waves-effect waves-light btn green" style="margin-top: 10px;">
+                    Add Receipt
+                </a>
+            </div>
+
+            <!-- Outstanding Balances -->
+            <div class="card" style="padding: 10px; margin-bottom: 20px;">
+                <h6>Outstanding Balances</h6>
+                <div id="balancesList"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
@@ -48,4 +86,3 @@
 
 </body>
 </html>
-
