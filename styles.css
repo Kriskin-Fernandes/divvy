@@ -157,7 +157,7 @@ button:disabled {
   padding: 0 8px;
 }
 
-/* Make divvy name big but prevent wrapping by shrinking if needed */.divvy-name-row {
+/* Divvy name row + auto-shrinking name */.divvy-name-row {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -165,12 +165,11 @@ button:disabled {
   max-width: 80%;
   margin: 0 auto;
 }.divvy-name-display {
-  font-size: clamp(18px, 5vw, 32px); /* more aggressive shrinking */
+  font-size: clamp(18px, 5vw, 32px); /* shrinks more aggressively */
   font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
 }.divvy-code-row-header {
   display: flex;
   justify-content: center;
@@ -208,7 +207,7 @@ button:disabled {
   border-radius: 999px;
   background: #121623;
   color: #e0e7ff;
-  font-size: 21px;
+  font-size: 14px;
 }.chip.member-chip {
   cursor: pointer;
 }.chip.member-chip.selected {
@@ -258,7 +257,7 @@ button:disabled {
   align-items: center;
 }
 
-/* Receipt name (0.75x previous 60px = 45px) with no-wrap style */.receipt-title {
+/* Receipt name (0.75x previous 60px = 45px) */.receipt-title {
   font-size: 45px;
   font-weight: 700;
   white-space: nowrap;
@@ -343,7 +342,7 @@ button:disabled {
 /* Total line under member list (paid total / receipt total, 1.5x row text) */.receipt-summary-total {
   margin-top: 8px;
   text-align: right;
-  font-size: 32px; /* 1.5x 22-ish */
+  font-size: 32px; /* approx 1.5x */
   font-weight: 600;
 }
 
@@ -467,9 +466,7 @@ input[type="number"]::-webkit-inner-spin-button {
   display: flex;
   align-items: center;
   gap: 6px;
-}
-
-/* The old assignee label is still used in some places */.expense-assign-label {
+}.expense-assign-label {
   font-size: 14px;
   color: #9ba4b5;
 }.expense-actions {
@@ -478,6 +475,47 @@ input[type="number"]::-webkit-inner-spin-button {
 }.expense-actions button {
   font-size: 14px;
   padding: 8px 10px;
+}
+
+/* Expense member select overlay */.expense-member-select-overlay {
+  margin-top: 8px;
+  padding: 8px;
+  border-radius: 8px;
+  background: #111827;
+  border: 1px solid #272c40;
+}
+
+/* Member select grid (used inside expense selector) */.member-select-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+/* member tiles: same size, grid, 50% bigger text */.member-select-grid.member-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 21px; /* 1.5x-ish */
+  height: 64px;    /* fixed height so all tiles are same size */
+  padding: 0 6px;
+  border-radius: 12px;
+
+  /* Stronger contrast vs. modal background */
+  background: #1f2937;
+  border: 1px solid #4b5563;
+  box-shadow: 0 0 6px rgba(15, 23, 42, 0.7);
+
+  color: #e5e7eb;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Selected tile style */.member-select-grid.member-chip.selected {
+  background: #4f46e5;
+  border-color: #818cf8;
+  color: #f9fafb;
 }
 
 /* Prompt modal */
@@ -524,27 +562,6 @@ input[type="number"]::-webkit-inner-spin-button {
 }.payment-subtext {
   font-size: 14px;
   color: #9ba4b5;
-}
-
-/* Member select grid (collector/debtors view names bigger + grid) */.member-select-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-
-/* member tiles: same size, grid, 50% bigger text */.member-select-grid.member-chip {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  font-size: 21px; /* 50% bigger than 14px */
-  height: 64px;    /* fixed height so all tiles are same size */
-  padding: 0 6px;
-  border-radius: 12px;
-  background: #121623;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* Utilities */.hidden {
