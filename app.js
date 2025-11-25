@@ -509,29 +509,59 @@ function renderReceiptMemberSummary(receipt, containerEl) {
     nameSpan.className = "member-name";
     nameSpan.textContent = getMemberName(id);
 
+    // formatted totals label "(paid/total)"
+    const totalsSpan = document.createElement("div");
+    totalsSpan.className = "member-totals";
+    const total = memberTotals[id] || 0;
+    const paid = memberPaid[id] || 0;
+    totalsSpan.textContent = `(${formatAmount(paid)}/${formatAmount(total)})`;
+
+    // hidden paid input (shown when row clicked)
     const paidInput = document.createElement("input");
     paidInput.type = "number";
     paidInput.step = "0.01";
     paidInput.min = "0";
-    paidInput.className = "member-paid-input";
-    paidInput.value = (memberPaid[id] || 0).toFixed(2);
+    paidInput.className = "member-paid-input hidden";
+    paidInput.value = paid.toFixed(2);
+
+    // when the input changes, save and update label
     paidInput.addEventListener("change", () => {
       const newVal = Number(paidInput.value || 0);
-      updateReceiptMemberPaid(receipt.id, id, newVal);
+      updateReceiptMemberPaid(receipt.id, id, newVal).then(() => {
+        memberPaid[id] = newVal;
+        totalsSpan.textContent = `(${formatAmount(newVal)}/${formatAmount(
+          total
+        )})`;
+      });
     });
 
-    const totalsSpan = document.createElement("div");
-    totalsSpan.className = "member-totals";
-    const total = memberTotals[id] || 0;
-    totalsSpan.textContent = `Total: ${formatAmount(total)}`;
+    // clicking row toggles between label and input
+    row.addEventListener("click", () => {
+      const isHidden = paidInput.classList.contains("hidden");
+      if (isHidden) {
+        // show input, hide label
+        totalsSpan.classList.add("hidden");
+        paidInput.classList.remove("hidden");
+        paidInput.focus();
+        paidInput.select();
+      } else {
+        // hide input, show label (update label from input)
+        const newVal = Number(paidInput.value || 0);
+        totalsSpan.textContent = `(${formatAmount(newVal)}/${formatAmount(
+          total
+        )})`;
+        totalsSpan.classList.remove("hidden");
+        paidInput.classList.add("hidden");
+      }
+    });
 
     row.appendChild(nameSpan);
-    row.appendChild(paidInput);
     row.appendChild(totalsSpan);
+    row.appendChild(paidInput);
     containerEl.appendChild(row);
   });
 
-    // Info about closure logic
+  // Info about closure logic
   const note = document.createElement("div");
   note.className = "small-text";
   const totalDue = Object.values(memberTotals).reduce(
@@ -544,9 +574,9 @@ function renderReceiptMemberSummary(receipt, containerEl) {
   );
   note.textContent = `Total due: ${formatAmount(
     totalDue
-  )}, Paid so far: ${formatAmount(
+  )}, paid: ${formatAmount(
     totalPaid
-  )}. Receipt will auto-close when paid is greater than or equal to total.`;
+  )}. Receipt will auto-close when paid is ≥ total.`;
   containerEl.appendChild(note);
 
   // Auto-close when totalPaid >= totalDue
@@ -554,7 +584,6 @@ function renderReceiptMemberSummary(receipt, containerEl) {
     toggleReceiptClosed(receipt.id);
   }
 }
-
 // --------------------------------------------------
 // Member detail modal
 // --------------------------------------------------
