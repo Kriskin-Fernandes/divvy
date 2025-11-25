@@ -6,8 +6,8 @@
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
   background-color: #0b0c10;
   color: #f7f9fc;
 }
@@ -165,7 +165,7 @@ button:disabled {
   max-width: 80%;
   margin: 0 auto;
 }.divvy-name-display {
-  font-size: clamp(18px, 5vw, 32px); /* shrinks more aggressively */
+  font-size: clamp(18px, 5vw, 32px);
   font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
@@ -180,8 +180,11 @@ button:disabled {
   font-size: 13px;
   color: #9ba4b5;
   margin-right: 0;
-}.code-display {
-  font-family: "SF Mono", Menlo, Monaco, Consolas, monospace;
+}
+
+/* Monospaced for numeric / code */.code-display {
+  font-family: "JetBrains Mono", "SF Mono", Menlo, Monaco, Consolas,
+    monospace;
   font-size: 18px;
   letter-spacing: 3px;
 }
@@ -202,12 +205,14 @@ button:disabled {
   gap: 6px;
   margin-top: 8px;
   margin-bottom: 6px;
-}.chip {
-  padding: 6px 12px;
+}
+
+/* Member tiles at top of divvy — 50% larger */.chip {
+  padding: 9px 18px; /* was 6x12 */
   border-radius: 999px;
   background: #121623;
   color: #e0e7ff;
-  font-size: 14px;
+  font-size: 21px; /* 1.5x 14px */
 }.chip.member-chip {
   cursor: pointer;
 }.chip.member-chip.selected {
@@ -217,7 +222,7 @@ button:disabled {
 }.chip.subtle {
   background: #181b29;
   color: #9ba4b5;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 /* Main content */.divvy-main {
@@ -253,26 +258,30 @@ button:disabled {
 
 /* Basic header inside receipt card */.receipt-top-row {
   display: flex;
-  justify-content: space-between;
+  justify-content: center; /* center-align title */
   align-items: center;
 }
 
-/* Receipt name (0.75x previous 60px = 45px) */.receipt-title {
-  font-size: 45px;
+/* Receipt name: 30% smaller than previous 45px ≈ 31px */.receipt-title {
+  font-size: 31px;
   font-weight: 700;
+  text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}.receipt-subtitle {
+}
+
+/* Center collector under title */.receipt-subtitle {
   font-size: 24px; /* ~2x */
   color: #a0aec0;
+  text-align: center;
 }.receipt-meta-row {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 6px;
   align-items: center;
-  font-size: 22px; /* ~2x */
+  font-size: 22px;
   color: #9ba4b5;
 }.badge {
   padding: 2px 8px;
@@ -298,14 +307,18 @@ button:disabled {
   display: flex;
   justify-content: space-between;
   padding: 4px 0;
-  font-size: 24px; /* ~2x */
+  font-size: 24px;
 }.expense-row-compact span:first-child {
   max-width: 65%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}.expense-row-compact span.amount {
+}
+
+/* Monospaced numeric/currency in expense rows */.expense-row-compact span.amount {
   font-variant-numeric: tabular-nums;
+  font-family: "JetBrains Mono", "SF Mono", Menlo, Monaco, Consolas,
+    monospace;
 }
 
 /* Per-member summary */.receipt-member-summary {
@@ -326,9 +339,11 @@ button:disabled {
   font-size: 22px;
   color: #9ba4b5;
   min-width: 90px;
+  font-family: "JetBrains Mono", "SF Mono", Menlo, Monaco, Consolas,
+    monospace;
 }
 
-/* Fixed width, right-aligned paid input */.member-paid-input {
+/* Fixed width, right-aligned paid input (monospaced) */.member-paid-input {
   width: 120px;
   padding: 6px 8px;
   border-radius: 8px;
@@ -337,13 +352,17 @@ button:disabled {
   color: #f7f9fc;
   font-size: 22px;
   text-align: right;
+  font-family: "JetBrains Mono", "SF Mono", Menlo, Monaco, Consolas,
+    monospace;
 }
 
-/* Total line under member list (paid total / receipt total, 1.5x row text) */.receipt-summary-total {
+/* Total line under member list (paid total / receipt total) */.receipt-summary-total {
   margin-top: 8px;
   text-align: right;
-  font-size: 32px; /* approx 1.5x */
+  font-size: 32px;
   font-weight: 600;
+  font-family: "JetBrains Mono", "SF Mono", Menlo, Monaco, Consolas,
+    monospace;
 }
 
 /* Receipt actions */.receipt-actions-row {
@@ -457,6 +476,11 @@ input[type="number"]::-webkit-inner-spin-button {
   flex: 2;
 }.expense-top-row input[type="number"] {
   flex: 1;
+}
+
+/* Numeric inputs monospaced */.expense-top-row input[type="number"] {
+  font-family: "JetBrains Mono", "SF Mono", Menlo, Monaco, Consolas,
+    monospace;
 }.expense-bottom-row {
   display: flex;
   justify-content: space-between;
@@ -497,11 +521,10 @@ input[type="number"]::-webkit-inner-spin-button {
   justify-content: center;
   text-align: center;
   font-size: 21px; /* 1.5x-ish */
-  height: 64px;    /* fixed height so all tiles are same size */
+  height: 64px;
   padding: 0 6px;
   border-radius: 12px;
 
-  /* Stronger contrast vs. modal background */
   background: #1f2937;
   border: 1px solid #4b5563;
   box-shadow: 0 0 6px rgba(15, 23, 42, 0.7);
