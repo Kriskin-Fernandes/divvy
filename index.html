@@ -1,76 +1,265 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Divvy — split bills</title>
+  <meta charset="UTF-8" />
+  <title>Divvy</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <link rel="stylesheet" href="styles.css" />
-  <!-- Firebase SDKs (Web v9 compat) -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 </head>
 <body>
-  <main id="app">
-    <header class="topbar">
-      <h1>divvy</h1>
-      <small>split bills — no accounts</small>
-    </header>
+  <div id="app">
+    <!-- Landing Screen -->
+    <div id="landing-screen" class="screen active-screen">
+      <div class="landing-container">
+        <h1 class="app-title">divvy</h1>
+        <p class="subtitle">Split bills with friends, fast.</p>
 
-    <section id="landing" class="card">
-      <div class="landing-actions">
-        <button id="makeDivvyBtn" class="btn primary">Make a divvy</button>
-        <div class="or">or</div>
-        <div class="join-row">
-          <input id="joinCode" type="text" maxlength="6" placeholder="Enter divvy code" />
-          <button id="joinBtn" class="btn">View a divvy</button>
+        <div class="card">
+          <h2>Join a divvy</h2>
+          <div class="input-row">
+            <input
+              id="join-code-input"
+              type="text"
+              maxlength="5"
+              placeholder="Enter 5-letter code"
+              class="code-input"
+            />
+            <button id="join-divvy-btn" class="primary-btn">Join</button>
+          </div>
         </div>
-        <p class="hint">Divvy codes are short (4–6 chars). Share with friends to collaborate.</p>
-      </div>
-    </section>
 
-    <section id="divvyView" class="hidden">
-      <div class="nav">
-        <button id="backHome" class="btn">← Home</button>
-        <div class="nav-code">Code: <span id="divvyCode"></span></div>
-      </div>
-
-      <div class="tabs">
-        <button id="tabReceipts" class="tab active">Receipts</button>
-        <button id="tabBalances" class="tab">Balances</button>
-        <button id="tabPeople" class="tab">People</button>
-      </div>
-
-      <div id="contentReceipts" class="content-block">
-        <div class="controls-row">
-          <button id="addReceiptBtn" class="btn primary">+ New Receipt</button>
-          <button id="addPersonBtn" class="btn">+ Add Person</button>
+        <div class="card">
+          <h2>Create a new divvy</h2>
+          <button id="create-divvy-btn" class="secondary-btn full-width">
+            Create divvy
+          </button>
+          <p class="hint">A 5-letter code will be generated for you.</p>
         </div>
-        <div id="receiptsList" class="list"></div>
-      </div>
 
-      <div id="contentBalances" class="content-block hidden">
-        <div id="balancesSummary" class="card small"></div>
-        <div id="balancesList" class="list"></div>
-      </div>
-
-      <div id="contentPeople" class="content-block hidden">
-        <div id="peopleList" class="list"></div>
-      </div>
-    </section>
-
-    <!-- Modal container -->
-    <div id="modal" class="modal hidden" inert>
-      <div class="modal-inner">
-        <button class="modal-close" id="modalClose">✕</button>
-        <div id="modalContent"></div>
+        <p id="landing-error" class="error-text"></p>
       </div>
     </div>
 
-    <footer class="footer">
-      <small>Made with 💛 · No accounts required</small>
-    </footer>
-  </main>
+    <!-- Main Divvy Screen -->
+    <div id="divvy-screen" class="screen">
+      <header class="divvy-header">
+        <div class="divvy-code-row">
+          <span class="label">Divvy code:</span>
+          <span id="divvy-code-display" class="code-display"></span>
+          <button id="leave-divvy-btn" class="small-btn">Leave</button>
+        </div>
 
-  <script src="app.js" defer></script>
+        <div class="members-header-row">
+          <div class="members-header-left">
+            <h2>Members</h2>
+          </div>
+          <button id="add-member-btn" class="small-primary-btn">
+            + Add member
+          </button>
+        </div>
+
+        <div id="members-list" class="chip-list">
+          <!-- Members chips -->
+        </div>
+      </header>
+
+      <main class="divvy-main">
+        <div class="receipts-header">
+          <h2>Receipts</h2>
+          <button id="add-receipt-btn" class="primary-btn">+ Add receipt</button>
+        </div>
+
+        <div id="receipts-list">
+          <!-- Receipts feed -->
+        </div>
+      </main>
+    </div>
+
+    <!-- Receipt Editor Modal -->
+    <div id="receipt-modal" class="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <h2 id="receipt-modal-title">New receipt</h2>
+          <button id="close-receipt-modal-btn" class="icon-btn">&times;</button>
+        </div>
+
+        <div class="modal-body" id="receipt-modal-body">
+          <!-- Step 1: Basic info -->
+          <section class="modal-section">
+            <h3>Receipt details</h3>
+            <label class="field-label">Receipt name (optional)</label>
+            <input
+              id="receipt-name-input"
+              type="text"
+              placeholder="e.g. Dinner, Uber, Groceries"
+            />
+
+            <label class="field-label">Collector (who is owed?)</label>
+            <div class="member-select-block">
+              <input
+                id="collector-search-input"
+                type="text"
+                placeholder="Search members"
+                class="search-input"
+              />
+              <div class="member-select-actions">
+                <button id="collector-add-member-btn" class="tiny-btn">
+                  + Add member
+                </button>
+              </div>
+              <div id="collector-options" class="chip-list selectable">
+                <!-- Member options -->
+              </div>
+            </div>
+
+            <p id="collector-error" class="error-text"></p>
+          </section>
+
+          <!-- Step 2: Debtors -->
+          <section class="modal-section">
+            <h3>Debtors (who owes?)</h3>
+            <p class="small-text">
+              Choose everyone involved in this receipt. "Everyone" is always available when assigning expenses.
+            </p>
+            <input
+              id="debtors-search-input"
+              type="text"
+              placeholder="Search members"
+              class="search-input"
+            />
+            <div class="member-select-actions">
+              <button id="debtors-add-member-btn" class="tiny-btn">
+                + Add member
+              </button>
+            </div>
+            <div id="debtors-options" class="chip-list selectable">
+              <!-- Member chips; multi-select -->
+            </div>
+            <p id="debtors-error" class="error-text"></p>
+          </section>
+
+          <!-- Step 3: Expenses -->
+          <section class="modal-section">
+            <h3>Expenses</h3>
+            <div class="expenses-header-row">
+              <button id="add-expense-btn" class="secondary-btn small">
+                + Add expense
+              </button>
+              <div class="total-display">
+                Total: <span id="receipt-total-display">$0.00</span>
+              </div>
+            </div>
+
+            <div id="expenses-list">
+              <!-- Expense items -->
+            </div>
+          </section>
+
+          <!-- Step 4: Publish -->
+          <section class="modal-section">
+            <h3>Assign and publish</h3>
+            <p class="small-text">
+              Assign each expense to a person or to "Everyone" for equal split among all selected debtors.
+            </p>
+            <button id="publish-receipt-btn" class="primary-btn full-width">
+              Publish receipt
+            </button>
+            <p id="publish-error" class="error-text"></p>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <!-- Member Detail Modal -->
+    <div id="member-modal" class="modal-overlay">
+      <div class="modal large-modal">
+        <div class="modal-header">
+          <h2 id="member-modal-title">Member</h2>
+          <button id="close-member-modal-btn" class="icon-btn">&times;</button>
+        </div>
+        <div class="modal-body member-modal-body">
+          <section>
+            <h3>Outstanding payments</h3>
+            <div id="member-outstanding-list" class="payment-list">
+              <!-- Outstanding items -->
+            </div>
+          </section>
+          <section>
+            <h3>Paid payments</h3>
+            <div id="member-paid-list" class="payment-list">
+              <!-- Paid items -->
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <!-- Simple prompt modal for adding member names, split etc. -->
+    <div id="prompt-modal" class="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <h2 id="prompt-title">Prompt</h2>
+        </div>
+        <div class="modal-body">
+          <p id="prompt-message"></p>
+          <input id="prompt-input" type="text" />
+          <div class="prompt-buttons">
+            <button id="prompt-cancel-btn" class="secondary-btn">Cancel</button>
+            <button id="prompt-ok-btn" class="primary-btn">OK</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Split options modal -->
+    <div id="split-modal" class="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <h2>Split expense</h2>
+          <button id="split-cancel-btn" class="icon-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="small-text">
+            Choose how to split this expense into multiple items.
+          </p>
+          <div class="split-section">
+            <h3>Split into equal parts</h3>
+            <label class="field-label">Number of parts</label>
+            <input
+              id="split-equal-count-input"
+              type="number"
+              min="2"
+              step="1"
+              value="2"
+            />
+            <button id="split-equal-btn" class="secondary-btn full-width">
+              Split equally
+            </button>
+          </div>
+
+          <div class="split-divider">or</div>
+
+          <div class="split-section">
+            <h3>Split by percentage</h3>
+            <p class="small-text">
+              Enter percentages separated by commas, e.g. 40,60 or 25,25,50.
+            </p>
+            <input
+              id="split-percentages-input"
+              type="text"
+              placeholder="e.g. 50,50"
+            />
+            <button id="split-percent-btn" class="secondary-btn full-width">
+              Split by percentage
+            </button>
+          </div>
+
+          <p id="split-error" class="error-text"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
 </body>
 </html>
