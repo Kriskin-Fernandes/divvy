@@ -54,12 +54,12 @@ body {
   align-items: center;
 }.code-input {
   flex: 1;
-  padding: 10px 12px;
+  padding: 14px 14px;
   border-radius: 10px;
   border: 1px solid #2b3245;
   background: #06070c;
   color: #f7f9fc;
-  font-size: 16px;
+  font-size: 18px;
   text-transform: uppercase;
 }.code-input::placeholder {
   color: #555d73;
@@ -70,13 +70,13 @@ body {
   color: #9ba4b5;
 }
 
-/* Buttons */
+/* Buttons - larger (~50% bigger) */
 button {
   border: none;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 18px;
   border-radius: 999px;
-  padding: 8px 14px;
+  padding: 12px 20px;
   background: #20263a;
   color: #f7f9fc;
 }
@@ -97,26 +97,26 @@ button:disabled {
   background: #181b29;
   border: 1px solid #323952;
 }.small-btn {
-  padding: 4px 10px;
-  font-size: 12px;
+  padding: 8px 14px;
+  font-size: 14px;
 }.small-primary-btn {
-  padding: 5px 12px;
-  font-size: 12px;
+  padding: 8px 14px;
+  font-size: 14px;
   background: #4f46e5;
   color: #fff;
 }.full-width {
   width: 100%;
 }.tiny-btn {
-  padding: 4px 10px;
-  font-size: 11px;
+  padding: 6px 10px;
+  font-size: 12px;
   border-radius: 999px;
   background: #1e2232;
   color: #d5ddff;
 }.icon-btn {
   background: transparent;
   color: #9ba4b5;
-  font-size: 22px;
-  padding: 0 4px;
+  font-size: 26px;
+  padding: 0 6px;
 }
 
 /* Error text */.error-text {
@@ -126,26 +126,62 @@ button:disabled {
   min-height: 16px;
 }
 
-/* Divvy screen */.divvy-header {
+/* Top bar: currency + divvy info */.top-bar {
   position: sticky;
   top: 0;
-  z-index: 10;
-  background: #0b0c10;
-  padding: 12px 12px 8px 12px;
-  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.45);
-}.divvy-code-row {
+  z-index: 20;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  padding: 8px 12px 4px 12px;
+  background: #080910;
+  border-bottom: 1px solid #11131b;
+}.currency-selector {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}.currency-flag {
+  font-size: 20px;
+}
+
+#currency-select {
+  background: #06070c;
+  color: #f7f9fc;
+  border-radius: 999px;
+  border: 1px solid #272c40;
+  padding: 6px 10px;
+  font-size: 13px;
+}.divvy-title-block {
+  flex: 1;
+  text-align: center;
+  padding: 0 8px;
+}.divvy-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}.divvy-name-display {
+  font-size: 16px;
+  font-weight: 600;
+}.divvy-code-row-header {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 4px;
+  margin-top: 2px;
 }.label {
   font-size: 13px;
   color: #9ba4b5;
-  margin-right: 6px;
+  margin-right: 0;
 }.code-display {
   font-family: "SF Mono", Menlo, Monaco, Consolas, monospace;
   font-size: 18px;
   letter-spacing: 3px;
+}
+
+/* Divvy header (members) */.divvy-header {
+  padding: 8px 12px 8px 12px;
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.45);
 }.members-header-row {
   display: flex;
   justify-content: space-between;
@@ -160,11 +196,11 @@ button:disabled {
   margin-top: 8px;
   margin-bottom: 6px;
 }.chip {
-  padding: 5px 10px;
+  padding: 6px 12px;
   border-radius: 999px;
   background: #121623;
   color: #e0e7ff;
-  font-size: 13px;
+  font-size: 14px;
 }.chip.member-chip {
   cursor: pointer;
 }.chip.member-chip.selected {
@@ -195,7 +231,20 @@ button:disabled {
   padding: 12px 12px 10px 12px;
   margin-bottom: 10px;
   box-shadow: 0 10px 18px rgba(0, 0, 0, 0.4);
-}.receipt-top-row {
+  transition: background 0.2s ease, opacity 0.2s ease, filter 0.2s ease;
+}
+
+/* Recently closed (<= 2 days): green highlight */.receipt-card.closed-recent {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), #11131b);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+/* Old closed (> 2 days): desaturated */.receipt-card.closed-old {
+  filter: grayscale(0.8);
+  opacity: 0.7;
+}
+
+/* Basic header inside receipt card */.receipt-top-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -264,14 +313,17 @@ button:disabled {
   text-align: right;
   font-size: 12px;
   color: #9ba4b5;
-}.member-paid-input {
-  width: 70px;
-  padding: 3px 5px;
+  min-width: 90px;
+}
+
+/* Fixed width, right-aligned paid input */.member-paid-input {
+  width: 80px;
+  padding: 4px 6px;
   border-radius: 8px;
   border: 1px solid #272c40;
   background: #05060b;
   color: #f7f9fc;
-  font-size: 12px;
+  font-size: 13px;
   text-align: right;
 }
 
@@ -281,8 +333,8 @@ button:disabled {
   margin-top: 6px;
 }.receipt-actions-row button {
   flex: 1;
-  font-size: 12px;
-  padding: 5px 6px;
+  font-size: 14px;
+  padding: 8px 10px;
 }
 
 /* Modal base */.modal-overlay {
@@ -335,12 +387,12 @@ button:disabled {
 input[type="text"],
 input[type="number"] {
   width: 100%;
-  padding: 8px 10px;
+  padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid #272c40;
   background: #05060b;
   color: #f7f9fc;
-  font-size: 14px;
+  font-size: 16px;
 }
 
 input[type="number"]::-webkit-outer-spin-button,
@@ -399,18 +451,18 @@ input[type="number"]::-webkit-inner-spin-button {
   font-size: 11px;
   color: #9ba4b5;
 }.expense-assignee-select {
-  padding: 3px 6px;
+  padding: 4px 8px;
   border-radius: 999px;
   border: 1px solid #272c40;
   background: #05060b;
   color: #f7f9fc;
-  font-size: 11px;
+  font-size: 12px;
 }.expense-actions {
   display: flex;
   gap: 4px;
 }.expense-actions button {
-  font-size: 11px;
-  padding: 3px 7px;
+  font-size: 12px;
+  padding: 6px 8px;
 }
 
 /* Prompt modal */
