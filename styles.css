@@ -208,7 +208,7 @@ button:disabled {
   border-radius: 999px;
   background: #121623;
   color: #e0e7ff;
-  font-size: 14px;
+  font-size: 21px;
 }.chip.member-chip {
   cursor: pointer;
 }.chip.member-chip.selected {
