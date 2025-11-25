@@ -42,13 +42,33 @@
 
     <!-- Main Divvy Screen -->
     <div id="divvy-screen" class="screen">
-      <header class="divvy-header">
-        <div class="divvy-code-row">
-          <span class="label">Divvy code:</span>
-          <span id="divvy-code-display" class="code-display"></span>
-          <button id="leave-divvy-btn" class="small-btn">Leave</button>
+      <!-- Top bar: currency + divvy name / code -->
+      <div class="top-bar">
+        <div class="currency-selector">
+          <span id="currency-flag" class="currency-flag">🇺🇸</span>
+          <select id="currency-select">
+            <option value="USD" selected>USD $</option>
+            <option value="GBP">GBP £</option>
+            <option value="EUR">EUR €</option>
+            <option value="AED">AED د.إ</option>
+            <option value="INR">INR ₹</option>
+            <option value="JPY">JPY ¥</option>
+          </select>
         </div>
+        <div class="divvy-title-block">
+          <div class="divvy-name-row">
+            <span id="divvy-name-display" class="divvy-name-display">Unnamed divvy</span>
+            <button id="edit-divvy-name-btn" class="tiny-btn">Edit</button>
+          </div>
+          <div class="divvy-code-row-header">
+            <span class="label">Code:</span>
+            <span id="divvy-code-display" class="code-display"></span>
+          </div>
+        </div>
+        <button id="leave-divvy-btn" class="small-btn">Leave</button>
+      </div>
 
+      <header class="divvy-header">
         <div class="members-header-row">
           <div class="members-header-left">
             <h2>Members</h2>
@@ -194,7 +214,7 @@
       </div>
     </div>
 
-    <!-- Simple prompt modal for adding member names, split etc. -->
+    <!-- Prompt modal -->
     <div id="prompt-modal" class="modal-overlay">
       <div class="modal">
         <div class="modal-header">
