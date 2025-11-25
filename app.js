@@ -34,6 +34,9 @@ const db = getFirestore(app);
 let currentDivvyCode = null;
 let currentDivvyData = null;
 
+// currency state
+let currentCurrency = "USD";
+
 // Temporary state for editing a receipt in the modal
 let editingReceipt = null; // JS object for the receipt being edited/created
 let splitTargetExpenseId = null;
@@ -52,11 +55,22 @@ function generateCode() {
   return code;
 }
 
-// Format amount to 2 decimals with $
+// currency metadata
+const currencyMeta = {
+  USD: { symbol: "$", flag: "🇺🇸" },
+  GBP: { symbol: "£", flag: "🇬🇧" },
+  EUR: { symbol: "€", flag: "🇪🇺" },
+  AED: { symbol: "د.إ", flag: "🇦🇪" },
+  INR: { symbol: "₹", flag: "🇮🇳" },
+  JPY: { symbol: "¥", flag: "🇯🇵" }
+};
+
+// Format amount to 2 decimals with current currency symbol
 function formatAmount(value) {
   const num = Number(value || 0);
-  if (Number.isNaN(num)) return "$0.00";
-  return "$" + num.toFixed(2);
+  const symbol = currencyMeta[currentCurrency]?.symbol || "$";
+  if (Number.isNaN(num)) return symbol + "0.00";
+  return symbol + num.toFixed(2);
 }
 
 // Sum expenses
@@ -94,6 +108,18 @@ function round2(n) {
   return Math.round(n * 100) / 100;
 }
 
+// Return "recent" if closed within last 2 days, "old" if older, null if not closed
+function getClosedStatus(receipt) {
+  if (!receipt.closed || !receipt.closedAt) return null;
+  const closedMs =
+    receipt.closedAt.seconds != null
+      ? receipt.closedAt.seconds * 1000
+      : Date.now();
+  const diffDays = (Date.now() - closedMs) / (1000 * 60 * 60 * 24);
+  if (diffDays <= 2) return "recent";
+  return "old";
+}
+
 // --------------------------------------------------
 // DOM references
 // --------------------------------------------------
@@ -108,10 +134,17 @@ const joinDivvyBtn = document.getElementById("join-divvy-btn");
 const createDivvyBtn = document.getElementById("create-divvy-btn");
 const landingError = document.getElementById("landing-error");
 
-// Divvy header
+// Top bar: currency + divvy info
+const currencyFlagEl = document.getElementById("currency-flag");
+const currencySelectEl = document.getElementById("currency-select");
+const divvyNameDisplay = document.getElementById("divvy-name-display");
+const editDivvyNameBtn = document.getElementById("edit-divvy-name-btn");
 const divvyCodeDisplay = document.getElementById("divvy-code-display");
 const leaveDivvyBtn = document.getElementById("leave-divvy-btn");
+
+// Members
 const membersListEl = document.getElementById("members-list");
+const addMemberHeaderBtn = document.getElementById("add-member-btn");
 
 // Receipts
 const receiptsListEl = document.getElementById("receipts-list");
@@ -292,6 +325,16 @@ function renderReceipts() {
 
     const total = calculateReceiptTotal(r);
 
+    // closed state styling
+    if (r.closed) {
+      const closedState = getClosedStatus(r);
+      if (closedState === "recent") {
+        card.classList.add("closed-recent");
+      } else if (closedState === "old") {
+        card.classList.add("closed-old");
+      }
+    }
+
     // Header
     const header = document.createElement("div");
     header.className = "receipt-top-row";
@@ -423,7 +466,6 @@ function renderReceiptMemberSummary(receipt, containerEl) {
   });
 
   // 1) Compute totals from assigned expenses
-  // Regular assignments
   expenses.forEach((e) => {
     const amount = Number(e.amount || 0);
     if (!amount) return;
@@ -433,7 +475,6 @@ function renderReceiptMemberSummary(receipt, containerEl) {
       const share = round2(amount / count);
       let runningTotal = 0;
       memberIds.forEach((id, idx) => {
-        // For last member, adjust share to fix rounding
         const val =
           idx === memberIds.length - 1
             ? round2(amount - runningTotal)
@@ -490,7 +531,7 @@ function renderReceiptMemberSummary(receipt, containerEl) {
     containerEl.appendChild(row);
   });
 
-  // Info about closure logic
+    // Info about closure logic
   const note = document.createElement("div");
   note.className = "small-text";
   const totalDue = Object.values(memberTotals).reduce(
@@ -505,8 +546,13 @@ function renderReceiptMemberSummary(receipt, containerEl) {
     totalDue
   )}, Paid so far: ${formatAmount(
     totalPaid
-  )}. Receipt auto-closable when these match.`;
+  )}. Receipt will auto-close when paid is greater than or equal to total.`;
   containerEl.appendChild(note);
+
+  // Auto-close when totalPaid >= totalDue
+  if (!receipt.closed && receipt.published && totalDue > 0 && totalPaid >= totalDue) {
+    toggleReceiptClosed(receipt.id);
+  }
 }
 
 // --------------------------------------------------
@@ -520,7 +566,6 @@ function openMemberModal(memberId) {
   memberOutstandingList.innerHTML = "";
   memberPaidList.innerHTML = "";
 
-  // Traverse receipts to find where this member is debtor vs collector
   const receipts = currentDivvyData.receipts || [];
   const outstanding = [];
   const paid = [];
@@ -528,16 +573,13 @@ function openMemberModal(memberId) {
   receipts.forEach((r) => {
     if (!r.published) return;
     const collector = getMemberName(r.collectorId);
-    const total = calculateReceiptTotal(r);
-
-    // Compute per-member totals and payments to decide if this member owes
-    const memberIds = r.memberIds || [];
-    if (!memberIds.includes(memberId)) return;
-
     const expenses = r.expenses || [];
     const payments = r.payments || [];
+    const memberIds = r.memberIds || [];
 
-        // compute due
+    if (!memberIds.includes(memberId)) return;
+
+    // compute due
     let due = 0;
     expenses.forEach((e) => {
       const amount = Number(e.amount || 0);
@@ -545,7 +587,6 @@ function openMemberModal(memberId) {
       if (e.assignedToId === "everyone") {
         const count = memberIds.length || 1;
         const share = round2(amount / count);
-        // member's share
         due = round2(due + share);
       } else if (e.assignedToId === memberId) {
         due = round2(due + amount);
@@ -566,13 +607,11 @@ function openMemberModal(memberId) {
     const description = `for ${receiptName}`;
 
     if (paidAmount < due && !r.closed) {
-      // outstanding
       outstanding.push({
         text: `Owes ${formatAmount(due - paidAmount)} to ${collector} ${description}`
       });
     }
 
-    // consider any positive paid as "paid payment"
     if (paidAmount > 0) {
       paid.push({
         text: `Paid ${formatAmount(paidAmount)} to ${collector} ${description}`
@@ -650,7 +689,8 @@ function openReceiptModal(receipt) {
       published: false,
       closed: false,
       createdAt: null,
-      updatedAt: null
+      updatedAt: null,
+      closedAt: null
     };
     receiptModalTitle.textContent = "New receipt";
   }
@@ -722,13 +762,34 @@ function renderDebtorsOptions() {
     chip.addEventListener("click", () => {
       const idx = selectedIds.indexOf(m.id);
       if (idx === -1) {
+        // add member to this receipt
         selectedIds.push(m.id);
       } else {
+        // remove member from this receipt
+        const removedId = m.id;
         selectedIds.splice(idx, 1);
+
+        // Redirect any expenses assigned specifically to this member to "everyone"
+        if (editingReceipt.expenses && editingReceipt.expenses.length) {
+          editingReceipt.expenses.forEach((e) => {
+            if (e.assignedToId === removedId) {
+              e.assignedToId = "everyone";
+            }
+          });
+        }
+
+        // Also clear any payment entries for this member on this receipt
+        if (editingReceipt.payments && editingReceipt.payments.length) {
+          editingReceipt.payments = editingReceipt.payments.filter(
+            (p) => p.memberId !== removedId
+          );
+        }
       }
+
       editingReceipt.memberIds = selectedIds;
       renderDebtorsOptions();
-      renderExpensesInModal(); // to refresh assignee dropdowns
+      renderExpensesInModal(); // refresh assignee dropdowns
+      updateReceiptTotalDisplay();
     });
     debtorsOptionsEl.appendChild(chip);
   });
@@ -999,12 +1060,11 @@ async function addMemberGlobal() {
     message: "Enter the member's name:",
     placeholder: "e.g. David"
   });
+  closePrompt();
   if (!name) {
-    closePrompt();
     return;
   }
   const trimmed = String(name).trim();
-  closePrompt();
   if (!trimmed) return;
 
   const id = uid();
@@ -1063,6 +1123,12 @@ async function toggleReceiptClosed(receiptId) {
   if (!r) return;
   r.closed = !r.closed;
 
+  if (r.closed) {
+    r.closedAt = { seconds: Math.floor(Date.now() / 1000) };
+  } else {
+    r.closedAt = null;
+  }
+
   await saveDivvy(currentDivvyCode, currentDivvyData);
   renderReceipts();
 }
@@ -1114,7 +1180,7 @@ async function publishReceipt() {
     "";
   editingReceipt.published = true;
 
-    // If it's a new receipt (not found by ID), push; otherwise update existing
+  // If it's a new receipt (not found by ID), push; otherwise update existing
   const existingIdx = currentDivvyData.receipts.findIndex(
     (x) => x.id === editingReceipt.id
   );
@@ -1160,7 +1226,18 @@ async function joinDivvy() {
     }
     currentDivvyCode = code;
     currentDivvyData = ensureDivvyDefaults(data);
+
+    // currency
+    currentCurrency = currentDivvyData.currency || "USD";
+    currencySelectEl.value = currentCurrency;
+    const flag = currencyMeta[currentCurrency]?.flag || "🇺🇸";
+    currencyFlagEl.textContent = flag;
+
+    // divvy name
+    divvyNameDisplay.textContent =
+      currentDivvyData.name || "Unnamed divvy";
     divvyCodeDisplay.textContent = currentDivvyCode;
+
     showDivvyScreen();
     renderMembers();
     renderReceipts();
@@ -1185,6 +1262,8 @@ async function createDivvy() {
   const now = serverTimestamp();
   const divvyData = {
     code,
+    name: "Unnamed divvy",
+    currency: currentCurrency || "USD",
     members: [],
     receipts: [],
     createdAt: now,
@@ -1195,7 +1274,18 @@ async function createDivvy() {
     await setDoc(doc(db, "divvies", code), divvyData);
     currentDivvyCode = code;
     currentDivvyData = ensureDivvyDefaults(divvyData);
+
+    // currency
+    currentCurrency = currentDivvyData.currency || "USD";
+    currencySelectEl.value = currentCurrency;
+    const flag = currencyMeta[currentCurrency]?.flag || "🇺🇸";
+    currencyFlagEl.textContent = flag;
+
+    // divvy name
+    divvyNameDisplay.textContent =
+      currentDivvyData.name || "Unnamed divvy";
     divvyCodeDisplay.textContent = currentDivvyCode;
+
     showDivvyScreen();
     renderMembers();
     renderReceipts();
@@ -1221,7 +1311,7 @@ createDivvyBtn.addEventListener("click", createDivvy);
 leaveDivvyBtn.addEventListener("click", showLanding);
 
 // Add member from header
-document.getElementById("add-member-btn").addEventListener("click", () => {
+addMemberHeaderBtn.addEventListener("click", () => {
   addMemberGlobal();
 });
 
@@ -1260,6 +1350,48 @@ splitPercentBtn.addEventListener("click", performPercentSplit);
 
 // Member modal close
 closeMemberModalBtn.addEventListener("click", closeMemberModal);
+
+// Edit divvy name
+editDivvyNameBtn.addEventListener("click", async () => {
+  if (!currentDivvyData) return;
+  const currentName = currentDivvyData.name || "Unnamed divvy";
+  const newName = await showPrompt({
+    title: "Divvy name",
+    message: "Enter a name for this divvy:",
+    placeholder: "e.g. Dubai Trip, Housemates",
+    initialValue: currentName
+  });
+  closePrompt();
+  if (!newName) return;
+  const trimmed = String(newName).trim();
+  if (!trimmed) return;
+
+  currentDivvyData.name = trimmed;
+  divvyNameDisplay.textContent = trimmed;
+  await saveDivvy(currentDivvyCode, currentDivvyData);
+});
+
+// Currency selector
+currencySelectEl.addEventListener("change", async () => {
+  if (!currentDivvyData) {
+    currentCurrency = currencySelectEl.value;
+    const flag = currencyMeta[currentCurrency]?.flag || "🇺🇸";
+    currencyFlagEl.textContent = flag;
+    return;
+  }
+
+  currentCurrency = currencySelectEl.value;
+  const flag = currencyMeta[currentCurrency]?.flag || "🇺🇸";
+  currencyFlagEl.textContent = flag;
+
+  // Persist chosen currency on divvy
+  currentDivvyData.currency = currentCurrency;
+  await saveDivvy(currentDivvyCode, currentDivvyData);
+
+  // Re-render for new symbol
+  renderMembers();
+  renderReceipts();
+});
 
 // --------------------------------------------------
 // Initial
