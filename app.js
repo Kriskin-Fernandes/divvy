@@ -9,7 +9,6 @@ import {
   doc,
   getDoc,
   setDoc,
-  updateDoc,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
@@ -174,7 +173,6 @@ const debtorsAddMemberBtn = document.getElementById("debtors-add-member-btn");
 // Expenses
 const expensesListEl = document.getElementById("expenses-list");
 const addExpenseBtn = document.getElementById("add-expense-btn");
-const receiptTotalDisplay = document.getElementById("receipt-total-display");
 
 // Publish
 const publishReceiptBtn = document.getElementById("publish-receipt-btn");
@@ -311,7 +309,7 @@ function renderReceipts() {
     return;
   }
 
-  // Sort by createdAt (if present) descending, fallback to array order
+  // Sort by createdAt (if present) descending
   const receipts = [...currentDivvyData.receipts].sort((a, b) => {
     if (a.createdAt && b.createdAt) {
       return b.createdAt.seconds - a.createdAt.seconds;
@@ -335,7 +333,7 @@ function renderReceipts() {
       }
     }
 
-    // Header
+    // Header (title only, no total)
     const header = document.createElement("div");
     header.className = "receipt-top-row";
 
@@ -345,12 +343,7 @@ function renderReceipts() {
       ? r.name
       : "Untitled receipt";
 
-    const amountEl = document.createElement("div");
-    amountEl.className = "receipt-title";
-    amountEl.textContent = formatAmount(total);
-
     header.appendChild(titleEl);
-    header.appendChild(amountEl);
 
     // Subtitle + meta
     const subtitle = document.createElement("div");
@@ -561,9 +554,7 @@ function renderReceiptMemberSummary(receipt, containerEl) {
     containerEl.appendChild(row);
   });
 
-  // Info about closure logic
-  const note = document.createElement("div");
-  note.className = "small-text";
+  // Compute overall totals
   const totalDue = Object.values(memberTotals).reduce(
     (sum, v) => sum + (v || 0),
     0
@@ -572,18 +563,21 @@ function renderReceiptMemberSummary(receipt, containerEl) {
     (sum, v) => sum + (v || 0),
     0
   );
-  note.textContent = `Total due: ${formatAmount(
+
+  // Summary line at bottom: paid/total
+  const summaryLine = document.createElement("div");
+  summaryLine.className = "receipt-summary-total";
+  summaryLine.textContent = `(${formatAmount(totalPaid)}/${formatAmount(
     totalDue
-  )}, paid: ${formatAmount(
-    totalPaid
-  )}. Receipt will auto-close when paid is ≥ total.`;
-  containerEl.appendChild(note);
+  )})`;
+  containerEl.appendChild(summaryLine);
 
   // Auto-close when totalPaid >= totalDue
   if (!receipt.closed && receipt.published && totalDue > 0 && totalPaid >= totalDue) {
     toggleReceiptClosed(receipt.id);
   }
 }
+
 // --------------------------------------------------
 // Member detail modal
 // --------------------------------------------------
@@ -730,7 +724,6 @@ function openReceiptModal(receipt) {
   renderCollectorOptions();
   renderDebtorsOptions();
   renderExpensesInModal();
-  updateReceiptTotalDisplay();
 
   receiptModal.classList.add("active");
 }
@@ -803,11 +796,16 @@ function renderDebtorsOptions() {
           editingReceipt.expenses.forEach((e) => {
             if (e.assignedToId === removedId) {
               e.assignedToId = "everyone";
+              if (Array.isArray(e.selectedMembers)) {
+                e.selectedMembers = e.selectedMembers.filter(
+                  (mid) => mid !== removedId
+                );
+              }
             }
           });
         }
 
-        // Also clear any payment entries for this member on this receipt
+                // Also clear any payment entries for this member on this receipt
         if (editingReceipt.payments && editingReceipt.payments.length) {
           editingReceipt.payments = editingReceipt.payments.filter(
             (p) => p.memberId !== removedId
@@ -817,8 +815,7 @@ function renderDebtorsOptions() {
 
       editingReceipt.memberIds = selectedIds;
       renderDebtorsOptions();
-      renderExpensesInModal(); // refresh assignee dropdowns
-      updateReceiptTotalDisplay();
+      renderExpensesInModal(); // refresh assignee UI
     });
     debtorsOptionsEl.appendChild(chip);
   });
@@ -861,13 +858,12 @@ function renderExpensesInModal() {
       e.amount != null && e.amount !== "" ? Number(e.amount).toFixed(2) : "";
     amountInput.addEventListener("change", () => {
       e.amount = Number(amountInput.value || 0);
-      updateReceiptTotalDisplay();
     });
 
     topRow.appendChild(nameInput);
     topRow.appendChild(amountInput);
 
-    // Bottom row: assignee + actions
+    // Bottom row: member picker + actions
     const bottomRow = document.createElement("div");
     bottomRow.className = "expense-bottom-row";
 
@@ -876,35 +872,45 @@ function renderExpensesInModal() {
 
     const assignLabel = document.createElement("div");
     assignLabel.className = "expense-assign-label";
-    assignLabel.textContent = "Assigned to";
+    assignLabel.textContent = "Members";
 
-    const select = document.createElement("select");
-    select.className = "expense-assignee-select";
+    const assignBtn = document.createElement("button");
+    assignBtn.className = "secondary-btn";
+    assignBtn.textContent = "Pick members";
 
-    // Option: everyone
-    const everyoneOpt = document.createElement("option");
-    everyoneOpt.value = "everyone";
-    everyoneOpt.textContent = "Everyone";
-    select.appendChild(everyoneOpt);
+    const selectedSummary = document.createElement("div");
+    selectedSummary.className = "small-text";
+    selectedSummary.style.marginLeft = "8px";
 
-    // Options: each member in receipt.memberIds
-    (editingReceipt.memberIds || []).forEach((id) => {
-      const m = getMemberById(id);
-      if (!m) return;
-      const opt = document.createElement("option");
-      opt.value = m.id;
-      opt.textContent = m.name;
-      select.appendChild(opt);
-    });
+    if (!Array.isArray(e.selectedMembers)) {
+      e.selectedMembers = [];
+    }
 
-    select.value = e.assignedToId || "everyone";
+    function updateSelectedSummary() {
+      const ids = e.selectedMembers || [];
+      if (!ids.length) {
+        selectedSummary.textContent = "(Everyone)";
+        e.assignedToId = "everyone";
+      } else {
+        const names = ids.map((id) => getMemberById(id)?.name || "").filter(Boolean);
+        selectedSummary.textContent = names.join(", ");
+        if (ids.length === 1) {
+          e.assignedToId = ids[0];
+        } else {
+          e.assignedToId = "everyone"; // actual per-member split handled when we applyExpenseMemberSplit
+        }
+      }
+    }
 
-    select.addEventListener("change", () => {
-      e.assignedToId = select.value;
+    updateSelectedSummary();
+
+    assignBtn.addEventListener("click", () => {
+      openExpenseMemberSelect(e);
     });
 
     bottomLeft.appendChild(assignLabel);
-    bottomLeft.appendChild(select);
+    bottomLeft.appendChild(assignBtn);
+    bottomLeft.appendChild(selectedSummary);
 
     const actions = document.createElement("div");
     actions.className = "expense-actions";
@@ -924,7 +930,6 @@ function renderExpensesInModal() {
         (x) => x.id !== e.id
       );
       renderExpensesInModal();
-      updateReceiptTotalDisplay();
     });
 
     actions.appendChild(splitBtn);
@@ -947,9 +952,121 @@ function renderExpensesInModal() {
   }
 }
 
-function updateReceiptTotalDisplay() {
-  const total = calculateReceiptTotal(editingReceipt || {});
-  receiptTotalDisplay.textContent = formatAmount(total);
+// Open in-place member selection for a single expense
+function openExpenseMemberSelect(expense) {
+  const expenseEl = expensesListEl.querySelector(
+    `.expense-item[data-expense-id="${expense.id}"]`
+  );
+  if (!expenseEl) return;
+
+  // Remove any existing selector
+  let existing = expenseEl.querySelector(".expense-member-select-overlay");
+  if (existing) {
+    existing.remove();
+  }
+
+  const overlay = document.createElement("div");
+  overlay.className = "expense-member-select-overlay";
+
+  const title = document.createElement("div");
+  title.className = "small-text";
+  title.textContent = "Select members for this expense:";
+  overlay.appendChild(title);
+
+  const grid = document.createElement("div");
+  grid.className = "member-select-grid";
+
+  const current = new Set(expense.selectedMembers || []);
+  const members = editingReceipt.memberIds || [];
+
+  members.forEach((id) => {
+    const m = getMemberById(id);
+    if (!m) return;
+    const cell = document.createElement("div");
+    cell.className = "chip member-chip";
+    cell.textContent = m.name;
+    if (current.has(id)) cell.classList.add("selected");
+    cell.addEventListener("click", () => {
+      if (current.has(id)) {
+        current.delete(id);
+        cell.classList.remove("selected");
+      } else {
+        current.add(id);
+        cell.classList.add("selected");
+      }
+    });
+    grid.appendChild(cell);
+  });
+
+  overlay.appendChild(grid);
+
+  const buttonsRow = document.createElement("div");
+  buttonsRow.style.display = "flex";
+  buttonsRow.style.justifyContent = "flex-end";
+  buttonsRow.style.gap = "8px";
+  buttonsRow.style.marginTop = "8px";
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.className = "secondary-btn small";
+  cancelBtn.textContent = "Cancel";
+  cancelBtn.addEventListener("click", () => {
+    overlay.remove();
+  });
+
+  const okBtn = document.createElement("button");
+  okBtn.className = "primary-btn small";
+  okBtn.textContent = "OK";
+  okBtn.addEventListener("click", () => {
+    expense.selectedMembers = Array.from(current);
+    overlay.remove();
+    applyExpenseMemberSplit(expense);
+    renderExpensesInModal();
+  });
+
+  buttonsRow.appendChild(cancelBtn);
+  buttonsRow.appendChild(okBtn);
+  overlay.appendChild(buttonsRow);
+
+  expenseEl.appendChild(overlay);
+}
+
+// When multiple members are selected for an expense, split evenly and assign
+function applyExpenseMemberSplit(expense) {
+  const ids = expense.selectedMembers || [];
+  const count = ids.length;
+  const amount = Number(expense.amount || 0);
+  if (count <= 1 || !(amount > 0)) {
+    return;
+  }
+
+  if (!editingReceipt || !Array.isArray(editingReceipt.expenses)) return;
+
+  const expenses = editingReceipt.expenses;
+  const idx = expenses.findIndex((e) => e.id === expense.id);
+  if (idx === -1) return;
+
+  const base = round2(amount / count);
+  const baseName = expense.name || "Item";
+  const newExpenses = [];
+  let running = 0;
+
+  ids.forEach((memberId, i) => {
+    let partAmount = base;
+    if (i === count - 1) {
+      partAmount = round2(amount - running);
+    }
+    running = round2(running + partAmount);
+    newExpenses.push({
+      id: uid(),
+      name: `${baseName} [${i + 1}/${count}]`,
+      amount: partAmount,
+      assignedToId: memberId,
+      selectedMembers: [memberId]
+    });
+  });
+
+  // Replace original expense with split ones
+  expenses.splice(idx, 1,...newExpenses);
 }
 
 // --------------------------------------------------
@@ -1005,20 +1122,21 @@ function performEqualSplit() {
 
     newExpenses.push({
       id: uid(),
-      // Name format: "Chicken [1/2]", "Chicken [2/2]" etc.
       name: `${baseName} [${i + 1}/${count}]`,
       amount,
-      assignedToId: original.assignedToId || "everyone"
+      assignedToId: original.assignedToId || "everyone",
+      selectedMembers: Array.isArray(original.selectedMembers)
+        ? [...original.selectedMembers]
+        : []
     });
   }
 
-  // Replace original with new ones
   expenses.splice(idx, 1,...newExpenses);
   editingReceipt.expenses = expenses;
   renderExpensesInModal();
-  updateReceiptTotalDisplay();
   closeSplitModal();
 }
+
 // Perform percentage split
 function performPercentSplit() {
   if (!editingReceipt || !splitTargetExpenseId) return;
@@ -1058,6 +1176,7 @@ function performPercentSplit() {
 
   const newExpenses = [];
   let running = 0;
+  const baseName = original.name || "Item";
 
   nums.forEach((pct, i) => {
     let amount = round2((total * pct) / 100);
@@ -1067,16 +1186,18 @@ function performPercentSplit() {
     running = round2(running + amount);
     newExpenses.push({
       id: uid(),
-      name: `${original.name || "Item"} [${i + 1}]`,
+      name: `${baseName} [${i + 1}/${nums.length}]`,
       amount,
-      assignedToId: original.assignedToId || "everyone"
+      assignedToId: original.assignedToId || "everyone",
+      selectedMembers: Array.isArray(original.selectedMembers)
+        ? [...original.selectedMembers]
+        : []
     });
   });
 
   expenses.splice(idx, 1,...newExpenses);
   editingReceipt.expenses = expenses;
   renderExpensesInModal();
-  updateReceiptTotalDisplay();
   closeSplitModal();
 }
 
@@ -1122,10 +1243,10 @@ function addExpenseLocal() {
     id: uid(),
     name: "",
     amount: 0,
-    assignedToId: "everyone"
+    assignedToId: "everyone",
+    selectedMembers: []
   });
   renderExpensesInModal();
-  updateReceiptTotalDisplay();
 }
 
 // Update payments for a member in a given receipt
@@ -1189,16 +1310,13 @@ async function publishReceipt() {
     return;
   }
 
-  // Ensure each expense has a numeric amount and assignee
+  // Ensure each expense has a numeric amount
   for (const e of editingReceipt.expenses) {
     const amount = Number(e.amount || 0);
     if (!(amount > 0)) {
       publishErrorEl.textContent =
         "Each expense must have an amount greater than 0.";
       return;
-    }
-    if (!e.assignedToId) {
-      e.assignedToId = "everyone";
     }
   }
 
@@ -1263,7 +1381,7 @@ async function joinDivvy() {
     const flag = currencyMeta[currentCurrency]?.flag || "🇺🇸";
     currencyFlagEl.textContent = flag;
 
-    // divvy name
+        // divvy name
     divvyNameDisplay.textContent =
       currentDivvyData.name || "Unnamed divvy";
     divvyCodeDisplay.textContent = currentDivvyCode;
