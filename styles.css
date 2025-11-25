@@ -155,16 +155,21 @@ button:disabled {
   flex: 1;
   text-align: center;
   padding: 0 8px;
-}.divvy-name-row {
+}
+
+/* Make divvy name big but prevent wrapping by shrinking if needed */.divvy-name-row {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-}
-
-/* Divvy name 3x bigger */.divvy-name-display {
-  font-size: 48px; /* 3x original 16px */
+  max-width: 70%;
+  margin: 0 auto;
+}.divvy-name-display {
+  font-size: clamp(20px, 7vw, 40px); /* scales but stays one line */
   font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }.divvy-code-row-header {
   display: flex;
   justify-content: center;
@@ -252,9 +257,12 @@ button:disabled {
   align-items: center;
 }
 
-/* Receipt name + overall total 4x bigger */.receipt-title {
-  font-size: 60px; /* ~4x original 15px */
+/* Receipt name (0.75x previous 60px = 45px) with no-wrap style */.receipt-title {
+  font-size: 45px;
   font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }.receipt-subtitle {
   font-size: 24px; /* ~2x */
   color: #a0aec0;
@@ -309,7 +317,7 @@ button:disabled {
   justify-content: space-between;
   align-items: center;
   padding: 6px 0;
-  font-size: 24px; /* ~2x */
+  font-size: 24px;
   gap: 8px;
 }.member-name {
   flex: 1;
@@ -329,6 +337,13 @@ button:disabled {
   color: #f7f9fc;
   font-size: 22px;
   text-align: right;
+}
+
+/* Total line under member list (paid total / receipt total, 1.5x row text) */.receipt-summary-total {
+  margin-top: 8px;
+  text-align: right;
+  font-size: 32px; /* 1.5x 22-ish */
+  font-weight: 600;
 }
 
 /* Receipt actions */.receipt-actions-row {
@@ -451,16 +466,11 @@ input[type="number"]::-webkit-inner-spin-button {
   display: flex;
   align-items: center;
   gap: 6px;
-}.expense-assign-label {
+}
+
+/* The old assignee label is still used in some places */.expense-assign-label {
   font-size: 14px;
   color: #9ba4b5;
-}.expense-assignee-select {
-  padding: 4px 8px;
-  border-radius: 999px;
-  border: 1px solid #272c40;
-  background: #05060b;
-  color: #f7f9fc;
-  font-size: 14px;
 }.expense-actions {
   display: flex;
   gap: 4px;
@@ -513,6 +523,17 @@ input[type="number"]::-webkit-inner-spin-button {
 }.payment-subtext {
   font-size: 14px;
   color: #9ba4b5;
+}
+
+/* Member select grid (collector/debtors view names bigger + grid) */.member-select-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}.member-select-grid.member-chip {
+  justify-content: center;
+  text-align: center;
+  font-size: 21px; /* 50% bigger than 14px */
+  padding: 10px 4px;
 }
 
 /* Utilities */.hidden {
