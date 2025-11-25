@@ -1,79 +1,52 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Divvy — split bills</title>
-  <link rel="stylesheet" href="styles.css" />
-  <!-- Firebase SDKs (Web v9 compat) -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Divvy</title>
+
+    <!-- Materialize CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
-  <main id="app">
-    <header class="topbar">
-      <h1>divvy</h1>
-      <small>split bills — no accounts</small>
-    </header>
 
-    <section id="landing" class="card">
-      <div class="landing-actions">
-        <button id="makeDivvyBtn" class="btn primary">Make a divvy</button>
-        <div class="or">or</div>
-        <div class="join-row">
-          <input id="joinCode" type="text" maxlength="6" placeholder="Enter divvy code" />
-          <button id="joinBtn" class="btn">View a divvy</button>
+<body class="grey lighten-4">
+
+    <!-- Main Container -->
+    <div class="container center-align" style="margin-top: 60px;">
+        <h3 class="blue-text text-darken-3" style="font-weight: 600;">Divvy</h3>
+
+        <div class="card" style="padding: 20px; border-radius: 16px;">
+            <h5>Welcome</h5>
+            <p>Split bills with your group instantly.</p>
+
+            <!-- Create Divvy Button -->
+            <a id="createDivvyBtn" class="waves-effect waves-light btn blue" style="width: 100%; margin-top: 10px;">
+                Make a Divvy
+            </a>
+
+            <!-- View Divvy Input -->
+            <div style="margin-top: 20px;">
+                <input id="divvyCodeInput" type="text" placeholder="Enter Divvy Code" maxlength="6" style="text-transform: uppercase;">
+                <a id="viewDivvyBtn" class="waves-effect waves-light btn green" style="width: 100%; margin-top: 10px;">
+                    View a Divvy
+                </a>
+            </div>
         </div>
-        <p class="hint">Divvy codes are short (4–6 chars). Share with friends to collaborate.</p>
-      </div>
-    </section>
-
-    <section id="divvyView" class="hidden">
-      <div class="nav">
-        <button id="backHome" class="btn">← Home</button>
-        <div class="nav-code">Code: <span id="divvyCode"></span></div>
-      </div>
-
-      <div class="tabs">
-        <button id="tabReceipts" class="tab active">Receipts</button>
-        <button id="tabBalances" class="tab">Balances</button>
-        <button id="tabPeople" class="tab">People</button>
-      </div>
-
-      <div id="contentReceipts" class="content-block">
-        <div class="controls-row">
-          <button id="addReceiptBtn" class="btn primary">+ New Receipt</button>
-          <button id="addPersonBtn" class="btn">+ Add Person</button>
-        </div>
-        <div id="receiptsList" class="list"></div>
-      </div>
-
-      <div id="contentBalances" class="content-block hidden">
-        <div id="balancesSummary" class="card small"></div>
-        <div id="balancesList" class="list"></div>
-      </div>
-
-      <div id="contentPeople" class="content-block hidden">
-        <div id="peopleList" class="list"></div>
-      </div>
-    </section>
-
-    <!-- Modal container -->
-    <div id="modal" class="modal hidden" aria-hidden="true">
-      <div class="modal-inner">
-        <button class="modal-close" id="modalClose">✕</button>
-        <div id="modalContent"></div>
-      </div>
     </div>
 
-    <footer class="footer">
-      <small>Made with 💛 · No accounts required</small>
-    </footer>
-  </main>
 
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="app.js"></script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+    <!-- Materialize JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+    <!-- Main App Script -->
+    <script src="app.js"></script>
 
 </body>
 </html>
