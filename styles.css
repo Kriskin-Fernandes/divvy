@@ -162,14 +162,15 @@ button:disabled {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  max-width: 70%;
+  max-width: 80%;
   margin: 0 auto;
 }.divvy-name-display {
-  font-size: clamp(20px, 7vw, 40px); /* scales but stays one line */
+  font-size: clamp(18px, 5vw, 32px); /* more aggressive shrinking */
   font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
 }.divvy-code-row-header {
   display: flex;
   justify-content: center;
@@ -527,13 +528,23 @@ input[type="number"]::-webkit-inner-spin-button {
 
 /* Member select grid (collector/debtors view names bigger + grid) */.member-select-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-}.member-select-grid.member-chip {
+}
+
+/* member tiles: same size, grid, 50% bigger text */.member-select-grid.member-chip {
+  display: flex;
+  align-items: center;
   justify-content: center;
   text-align: center;
   font-size: 21px; /* 50% bigger than 14px */
-  padding: 10px 4px;
+  height: 64px;    /* fixed height so all tiles are same size */
+  padding: 0 6px;
+  border-radius: 12px;
+  background: #121623;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Utilities */.hidden {
