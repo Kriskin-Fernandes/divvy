@@ -75,13 +75,15 @@
   function showModal(html) {
     modalContent.innerHTML = html;
     modal.classList.remove('hidden');
-    modal.setAttribute('aria-hidden','false');
+    modal.removeAttribute('inert');   // enable modal for focus
   }
+
   function closeModal(){
     modal.classList.add('hidden');
-    modal.setAttribute('aria-hidden','true');
+    modal.setAttribute('inert', '');  // prevent focus on hidden modal
     modalContent.innerHTML = '';
   }
+
   modalClose.addEventListener('click', closeModal);
   modal.addEventListener('click', (e)=>{ if(e.target===modal) closeModal(); });
 
