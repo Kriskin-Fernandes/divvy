@@ -138,9 +138,6 @@
           <!-- Step 2: Debtors -->
           <section class="modal-section">
             <h3>Debtors (who owes?)</h3>
-            <p class="small-text">
-              Choose everyone involved in this receipt. "Everyone" is always available when assigning expenses.
-            </p>
             <input
               id="debtors-search-input"
               type="text"
@@ -165,9 +162,6 @@
               <button id="add-expense-btn" class="secondary-btn small">
                 + Add expense
               </button>
-              <div class="total-display">
-                Total: <span id="receipt-total-display">$0.00</span>
-              </div>
             </div>
 
             <div id="expenses-list">
@@ -179,7 +173,8 @@
           <section class="modal-section">
             <h3>Assign and publish</h3>
             <p class="small-text">
-              Assign each expense to a person or to "Everyone" for equal split among all selected debtors.
+              Assign each expense to the correct people. If you pick multiple members for an expense,
+              it will be split evenly between them.
             </p>
             <button id="publish-receipt-btn" class="primary-btn full-width">
               Publish receipt
