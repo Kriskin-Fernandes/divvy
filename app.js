@@ -994,6 +994,7 @@ function performEqualSplit() {
   const base = round2(total / count);
   const newExpenses = [];
   let running = 0;
+  const baseName = original.name || "Item";
 
   for (let i = 0; i < count; i++) {
     let amount = base;
@@ -1004,7 +1005,8 @@ function performEqualSplit() {
 
     newExpenses.push({
       id: uid(),
-      name: `${original.name || "Item"} [${i + 1}]`,
+      // Name format: "Chicken [1/2]", "Chicken [2/2]" etc.
+      name: `${baseName} [${i + 1}/${count}]`,
       amount,
       assignedToId: original.assignedToId || "everyone"
     });
@@ -1017,7 +1019,6 @@ function performEqualSplit() {
   updateReceiptTotalDisplay();
   closeSplitModal();
 }
-
 // Perform percentage split
 function performPercentSplit() {
   if (!editingReceipt || !splitTargetExpenseId) return;
