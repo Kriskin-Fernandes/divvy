@@ -120,6 +120,35 @@ function getClosedStatus(receipt) {
 }
 
 // --------------------------------------------------
+// Cookie helpers
+// --------------------------------------------------
+function setCookie(name, value, days = 365) {
+  const d = new Date();
+  d.setTime(d.getTime() + days * 24 * 60 * 60 * 1000);
+  const expires = "expires=" + d.toUTCString();
+  document.cookie = `${name}=${encodeURIComponent(
+    value
+  )};${expires};path=/;SameSite=Lax`;
+}
+
+function getCookie(name) {
+  const cname = name + "=";
+  const decoded = decodeURIComponent(document.cookie || "");
+  const parts = decoded.split(";");
+  for (let part of parts) {
+    part = part.trim();
+    if (part.indexOf(cname) === 0) {
+      return part.substring(cname.length, part.length);
+    }
+  }
+  return null;
+}
+
+function deleteCookie(name) {
+  document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;SameSite=Lax`;
+}
+
+// --------------------------------------------------
 // DOM references
 // --------------------------------------------------
 
@@ -805,7 +834,7 @@ function renderDebtorsOptions() {
           });
         }
 
-                // Also clear any payment entries for this member on this receipt
+        // Also clear any payment entries for this member on this receipt
         if (editingReceipt.payments && editingReceipt.payments.length) {
           editingReceipt.payments = editingReceipt.payments.filter(
             (p) => p.memberId !== removedId
@@ -908,6 +937,7 @@ function renderExpensesInModal() {
 
     bottomLeft.appendChild(assignLabel);
     bottomLeft.appendChild(assignBtn);
+
     const actions = document.createElement("div");
     actions.className = "expense-actions";
 
@@ -1065,6 +1095,7 @@ function applyExpenseMemberSplit(expense) {
   expenses.splice(idx, 1,...newExpenses);
 }
 
+// --------------------------------------------------
 // --------------------------------------------------
 // Split expense modal
 // --------------------------------------------------
@@ -1377,10 +1408,14 @@ async function joinDivvy() {
     const flag = currencyMeta[currentCurrency]?.flag || "🇺🇸";
     currencyFlagEl.textContent = flag;
 
-        // divvy name
+    // divvy name
     divvyNameDisplay.textContent =
       currentDivvyData.name || "Unnamed divvy";
     divvyCodeDisplay.textContent = currentDivvyCode;
+
+    // remember last divvy + currency in cookies
+    setCookie("divvy_last_code", currentDivvyCode);
+    setCookie("divvy_last_currency", currentCurrency);
 
     showDivvyScreen();
     renderMembers();
@@ -1430,6 +1465,10 @@ async function createDivvy() {
       currentDivvyData.name || "Unnamed divvy";
     divvyCodeDisplay.textContent = currentDivvyCode;
 
+    // remember last divvy + currency in cookies
+    setCookie("divvy_last_code", currentDivvyCode);
+    setCookie("divvy_last_currency", currentCurrency);
+
     showDivvyScreen();
     renderMembers();
     renderReceipts();
@@ -1452,7 +1491,10 @@ joinCodeInput.addEventListener("keyup", (e) => {
 createDivvyBtn.addEventListener("click", createDivvy);
 
 // Leave divvy
-leaveDivvyBtn.addEventListener("click", showLanding);
+leaveDivvyBtn.addEventListener("click", () => {
+  deleteCookie("divvy_last_code");
+  showLanding();
+});
 
 // Add member from header
 addMemberHeaderBtn.addEventListener("click", () => {
@@ -1521,6 +1563,7 @@ currencySelectEl.addEventListener("change", async () => {
     currentCurrency = currencySelectEl.value;
     const flag = currencyMeta[currentCurrency]?.flag || "🇺🇸";
     currencyFlagEl.textContent = flag;
+    setCookie("divvy_last_currency", currentCurrency);
     return;
   }
 
@@ -1532,12 +1575,59 @@ currencySelectEl.addEventListener("change", async () => {
   currentDivvyData.currency = currentCurrency;
   await saveDivvy(currentDivvyCode, currentDivvyData);
 
+  // remember currency for future
+  setCookie("divvy_last_currency", currentCurrency);
+
   // Re-render for new symbol
   renderMembers();
   renderReceipts();
 });
 
 // --------------------------------------------------
-// Initial
+// Initial (auto-join last divvy if cookie exists)
 // --------------------------------------------------
-showLanding();
+(async function init() {
+  const savedCurrency = getCookie("divvy_last_currency");
+  if (savedCurrency && currencyMeta[savedCurrency]) {
+    currentCurrency = savedCurrency;
+    currencySelectEl.value = savedCurrency;
+    const flag = currencyMeta[savedCurrency]?.flag || "🇺🇸";
+    currencyFlagEl.textContent = flag;
+  }
+
+  const savedCode = getCookie("divvy_last_code");
+  if (!savedCode) {
+    showLanding();
+    return;
+  }
+
+  try {
+    const data = await loadDivvy(savedCode);
+    if (!data) {
+      // divvy might have been deleted
+      deleteCookie("divvy_last_code");
+      showLanding();
+      return;
+    }
+    currentDivvyCode = savedCode;
+    currentDivvyData = ensureDivvyDefaults(data);
+
+    // set currency from divvy if present; fallback to cookie, then USD
+    currentCurrency =
+      currentDivvyData.currency || savedCurrency || "USD";
+    currencySelectEl.value = currentCurrency;
+    const flag = currencyMeta[currentCurrency]?.flag || "🇺🇸";
+    currencyFlagEl.textContent = flag;
+
+    divvyNameDisplay.textContent =
+      currentDivvyData.name || "Unnamed divvy";
+    divvyCodeDisplay.textContent = currentDivvyCode;
+
+    showDivvyScreen();
+    renderMembers();
+    renderReceipts();
+  } catch (err) {
+    console.error("Auto-join failed:", err);
+    showLanding();
+  }
+})();
