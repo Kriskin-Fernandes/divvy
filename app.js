@@ -638,7 +638,9 @@ function openMemberModal(memberId) {
   }
 
   receipts.forEach((r) => {
-    if (!r.published) return;
+    // Only consider receipts that are published AND not closed
+    if (!r.published || r.closed) return;
+
     const collectorId = r.collectorId;
     const collectorName = getMemberName(collectorId);
     const memberIds = r.memberIds || [];
@@ -698,7 +700,7 @@ function openMemberModal(memberId) {
     if (memberIds.includes(memberId)) {
       const due = memberTotals[memberId] || 0;
       const paidAmount = memberPaidLocal[memberId] || 0;
-      if (due > paidAmount && !r.closed) {
+      if (due > paidAmount) {
         const stillOwes = round2(due - paidAmount);
         outstanding.push({
           text: `Owes ${formatAmount(stillOwes)} to ${collectorName} for ${receiptName}`
@@ -718,7 +720,7 @@ function openMemberModal(memberId) {
         const due = memberTotals[id] || 0;
         const paidAmount = memberPaidLocal[id] || 0;
         const stillOwes = round2(due - paidAmount);
-        if (stillOwes > 0 && !r.closed) {
+        if (stillOwes > 0) {
           owedBy.push({
             text: `${getMemberName(id)} owes ${formatAmount(
               stillOwes
