@@ -214,6 +214,8 @@ const closeMemberModalBtn = document.getElementById("close-member-modal-btn");
 const memberOutstandingList = document.getElementById(
   "member-outstanding-list"
 );
+const memberOwedByList = document.getElementById("member-owed-by-list");
+const memberAggregateList = document.getElementById("member-aggregate-list");
 const memberPaidList = document.getElementById("member-paid-list");
 
 // Prompt modal (generic text input)
@@ -616,61 +618,128 @@ function openMemberModal(memberId) {
 
   memberModalTitle.textContent = member.name;
   memberOutstandingList.innerHTML = "";
+  memberOwedByList.innerHTML = "";
+  memberAggregateList.innerHTML = "";
   memberPaidList.innerHTML = "";
 
   const receipts = currentDivvyData.receipts || [];
-  const outstanding = [];
-  const paid = [];
+  const outstanding = []; // what this member still owes others (per receipt)
+  const owedBy = [];      // who owes this member (per receipt)
+  const paid = [];        // payments they have made
+
+  // For aggregate settlements: net[debtorId][creditorId] = amount
+  const net = {};
+
+  // Helper to accumulate in net structure
+  function addNet(debtorId, creditorId, amount) {
+    if (!net[debtorId]) net[debtorId] = {};
+    if (!net[debtorId][creditorId]) net[debtorId][creditorId] = 0;
+    net[debtorId][creditorId] = round2(net[debtorId][creditorId] + amount);
+  }
 
   receipts.forEach((r) => {
     if (!r.published) return;
-    const collector = getMemberName(r.collectorId);
+    const collectorId = r.collectorId;
+    const collectorName = getMemberName(collectorId);
+    const memberIds = r.memberIds || [];
+    if (!memberIds.length) return;
+
     const expenses = r.expenses || [];
     const payments = r.payments || [];
-    const memberIds = r.memberIds || [];
 
-    if (!memberIds.includes(memberId)) return;
+    // Compute amounts due per member (like in renderReceiptMemberSummary)
+    const memberTotals = {};
+    const memberPaidLocal = {};
 
-    // compute due
-    let due = 0;
+    memberIds.forEach((id) => {
+      memberTotals[id] = 0;
+      memberPaidLocal[id] = 0;
+    });
+
     expenses.forEach((e) => {
       const amount = Number(e.amount || 0);
       if (!amount) return;
       if (e.assignedToId === "everyone") {
         const count = memberIds.length || 1;
         const share = round2(amount / count);
-        due = round2(due + share);
-      } else if (e.assignedToId === memberId) {
-        due = round2(due + amount);
+        let runningTotal = 0;
+        memberIds.forEach((id, idx) => {
+          const val =
+            idx === memberIds.length - 1
+              ? round2(amount - runningTotal)
+              : share;
+          memberTotals[id] = round2((memberTotals[id] || 0) + val);
+          runningTotal += val;
+        });
+      } else {
+        if (memberTotals[e.assignedToId] == null) {
+          memberTotals[e.assignedToId] = 0;
+        }
+        memberTotals[e.assignedToId] = round2(
+          memberTotals[e.assignedToId] + amount
+        );
       }
     });
 
-    // compute paid
-    let paidAmount = 0;
     payments.forEach((p) => {
-      if (p.memberId === memberId) {
-        paidAmount = round2(paidAmount + Number(p.paid || 0));
+      const amount = Number(p.paid || 0);
+      if (!amount) return;
+      if (memberPaidLocal[p.memberId] == null) {
+        memberPaidLocal[p.memberId] = 0;
       }
+      memberPaidLocal[p.memberId] = round2(
+        memberPaidLocal[p.memberId] + amount
+      );
     });
-
-    if (due <= 0 && paidAmount <= 0) return;
 
     const receiptName = r.name && r.name.trim() ? r.name : "Untitled receipt";
-    const description = `for ${receiptName}`;
 
-    if (paidAmount < due && !r.closed) {
-      outstanding.push({
-        text: `Owes ${formatAmount(due - paidAmount)} to ${collector} ${description}`
+    // --- Build per-receipt outstanding (for this member as debtor) ---
+    if (memberIds.includes(memberId)) {
+      const due = memberTotals[memberId] || 0;
+      const paidAmount = memberPaidLocal[memberId] || 0;
+      if (due > paidAmount && !r.closed) {
+        const stillOwes = round2(due - paidAmount);
+        outstanding.push({
+          text: `Owes ${formatAmount(stillOwes)} to ${collectorName} for ${receiptName}`
+        });
+      }
+      if (paidAmount > 0) {
+        paid.push({
+          text: `Paid ${formatAmount(paidAmount)} to ${collectorName} for ${receiptName}`
+        });
+      }
+    }
+
+    // --- Build "who owes them" list (this member as collector) ---
+    if (collectorId === memberId) {
+      memberIds.forEach((id) => {
+        if (id === memberId) return;
+        const due = memberTotals[id] || 0;
+        const paidAmount = memberPaidLocal[id] || 0;
+        const stillOwes = round2(due - paidAmount);
+        if (stillOwes > 0 && !r.closed) {
+          owedBy.push({
+            text: `${getMemberName(id)} owes ${formatAmount(
+              stillOwes
+            )} for ${receiptName}`
+          });
+        }
       });
     }
 
-    if (paidAmount > 0) {
-      paid.push({
-        text: `Paid ${formatAmount(paidAmount)} to ${collector} ${description}`
-      });
-    }
+    // --- Aggregate net debts: each debtor owes collector (if due > paid) ---
+    memberIds.forEach((id) => {
+      const due = memberTotals[id] || 0;
+      const paidAmount = memberPaidLocal[id] || 0;
+      const stillOwes = round2(due - paidAmount);
+      if (stillOwes > 0 && collectorId && id !== collectorId) {
+        addNet(id, collectorId, stillOwes);
+      }
+    });
   });
 
+  // --- Render Outstanding payments (what this member owes others) ---
   if (!outstanding.length) {
     const item = document.createElement("div");
     item.className = "payment-item";
@@ -689,6 +758,68 @@ function openMemberModal(memberId) {
     });
   }
 
+  // --- Render "Who owes them" (this member as collector) ---
+  if (!owedBy.length) {
+    const item = document.createElement("div");
+    item.className = "payment-item";
+    item.innerHTML =
+      "<div class='payment-subtext'>No one currently owes them.</div>";
+    memberOwedByList.appendChild(item);
+  } else {
+    owedBy.forEach((o) => {
+      const item = document.createElement("div");
+      item.className = "payment-item";
+      const title = document.createElement("div");
+      title.className = "payment-title";
+      title.textContent = o.text;
+      item.appendChild(title);
+      memberOwedByList.appendChild(item);
+    });
+  }
+
+  // --- Build and render aggregate net settlements ---
+  // net[debtor][creditor] = amount
+  const aggregateItems = [];
+  const members = currentDivvyData.members || [];
+
+  members.forEach((other) => {
+    const otherId = other.id;
+    if (otherId === memberId) return;
+
+    const oToMe = (net[otherId] && net[otherId][memberId]) || 0; // other → me
+    const meToO = (net[memberId] && net[memberId][otherId]) || 0; // me → other
+    const diff = round2(meToO - oToMe); // positive: I owe them, negative: they owe me
+
+    if (diff > 0.01) {
+      aggregateItems.push({
+        text: `Pay ${other.name} ${formatAmount(diff)}`
+      });
+    } else if (diff < -0.01) {
+      aggregateItems.push({
+        text: `${other.name} owes you ${formatAmount(Math.abs(diff))}`
+      });
+    }
+  });
+
+  if (!aggregateItems.length) {
+    const item = document.createElement("div");
+    item.className = "payment-item";
+    item.innerHTML =
+      "<div class='payment-subtext'>All settled overall 🎉</div>";
+    memberAggregateList.appendChild(item);
+  } else {
+    aggregateItems.forEach((a) => {
+      const item = document.createElement("div");
+      item.className = "payment-item";
+      const title = document.createElement("div");
+      title.className = "payment-title";
+      title.textContent = a.text;
+      item.appendChild(title);
+      memberAggregateList.appendChild(item);
+    });
+  }
+
+  // --- Render paid payments ---
   if (!paid.length) {
     const item = document.createElement("div");
     item.className = "payment-item";
@@ -1095,7 +1226,6 @@ function applyExpenseMemberSplit(expense) {
   expenses.splice(idx, 1,...newExpenses);
 }
 
-// --------------------------------------------------
 // --------------------------------------------------
 // Split expense modal
 // --------------------------------------------------
