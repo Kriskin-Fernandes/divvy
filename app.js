@@ -700,13 +700,16 @@ function openMemberModal(memberId) {
     if (memberIds.includes(memberId)) {
       const due = memberTotals[memberId] || 0;
       const paidAmount = memberPaidLocal[memberId] || 0;
+
       if (due > paidAmount) {
         const stillOwes = round2(due - paidAmount);
         outstanding.push({
           text: `Owes ${formatAmount(stillOwes)} to ${collectorName} for ${receiptName}`
         });
       }
-      if (paidAmount > 0) {
+
+      // Completed payments: only when paying someone else, not themselves
+      if (paidAmount > 0 && collectorId && collectorId !== memberId) {
         paid.push({
           text: `Paid ${formatAmount(paidAmount)} to ${collectorName} for ${receiptName}`
         });
