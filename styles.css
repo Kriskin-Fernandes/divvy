@@ -208,11 +208,11 @@ button:disabled {
 }
 
 /* Member tiles at top of divvy — 50% larger */.chip {
-  padding: 9px 18px; /* was 6x12 */
+  padding: 9px 18px;
   border-radius: 999px;
   background: #121623;
   color: #e0e7ff;
-  font-size: 21px; /* 1.5x 14px */
+  font-size: 21px;
 }.chip.member-chip {
   cursor: pointer;
 }.chip.member-chip.selected {
