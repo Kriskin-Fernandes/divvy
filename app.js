@@ -449,7 +449,7 @@ function renderReceipts() {
     markClosedBtn.className = "primary-btn";
     markClosedBtn.textContent = r.closed
       ? "Reopen"
-      : "Mark closed (everyone paid)";
+      : "Close receipt";
     markClosedBtn.addEventListener("click", () => {
       toggleReceiptClosed(r.id);
     });
